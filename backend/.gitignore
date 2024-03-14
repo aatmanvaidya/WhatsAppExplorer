@@ -1,0 +1,28 @@
+# node_modules
+emitterLogs/
+node_modules/
+
+# login tokens
+whatsapp-session-*
+.wwebjs_auth/
+.env
+
+# docs and logs
+docs/
+config/*.yml
+downloaded-media/
+data/
+IndividualChatLogs/
+chatContactLogs/
+message-logs/
+allContactLogs/*.txt
+anonymisation/hashed_ids.json
+
+backup-app.js
+downloader.js
+client-logs.txt
+emitterlog.txt
+
+formResponse/
+
+keys/*.json

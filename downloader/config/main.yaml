@@ -1,0 +1,20 @@
+mailer:
+  enabled: true
+  email: shreyashjain1007@gmail.com
+
+services:
+  frontend:
+    name: wm-frontend
+  backend:
+    name: wm-backend
+  mongodb:
+    uri: mongodb://127.0.0.1:27017/whatsappLogs
+
+data:
+  path: /mnt/storage-2tb/kg766/WhatsappMonitorData
+
+backup:
+  duration: 5
+
+website:
+  enabled: true

@@ -1,0 +1,32 @@
+body {
+  font-family: sans-serif;
+}
+
+.tab-container button{
+  border-right: 1px solid rgba(0,0,0,0.3) !important;
+  border-top: 0px !important;
+  border-bottom: 1px solid rgba(0,0,0,0.3) !important;
+  overflow: hidden !important;
+}
+
+.tab-container button:first-child{
+  border-left: 1px solid rgba(0,0,0,0.3) !important;
+  border-bottom-left-radius: 5px !important;
+}
+
+.tab-container button:last-child{
+  border-bottom-right-radius: 5px !important;
+}
+
+.text-hyperlink-field > a{
+  text-decoration: none;
+}
+
+/* For content-section height */
+.css-19kzrtu{
+  height: 100%;
+  box-sizing: border-box;
+}
+.css-19kzrtu > p{
+  height: 100%;
+}

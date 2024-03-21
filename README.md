@@ -182,3 +182,5 @@ BASE_URL=monitoring
 6. Login with the surveyor credentials to access the surveyor dashboard. A surveyor can then add participants to the survey.
 7. You can monitor the application data in the monitoring dashboard. The monitoring dashboard is accessible at `http://<your_ip>:<port>/<base_url>` as set in the `run.conf` file in the monitoring directory.
 
+## Data visualizer code
+You can also find the code for the frontend, backend and pipelines required for building a dashboard to visualize the data. The dashboard provides an easy way to summarize the collected data and can be easily setup based on the pipelines provided by WhatsApp Explorer. You can find the code for the visualizer in the `data_visualizer` folder. Please refer to the README in that folder for details.

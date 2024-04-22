@@ -1,0 +1,5 @@
+db.images.update({}, { $set: { flagCount: 0 } }, false, true);
+
+db.messages.update({}, { $set: { flagCount: 0 } }, false, true);
+
+db.links.update({}, { $set: { flagCount: 0 } }, false, true);

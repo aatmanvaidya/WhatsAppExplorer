@@ -5,7 +5,6 @@ node_modules/
 # login tokens
 whatsapp-session-*
 .wwebjs_auth/
-.env
 
 # docs and logs
 docs/

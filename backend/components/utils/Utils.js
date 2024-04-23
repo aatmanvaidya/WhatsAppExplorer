@@ -2,6 +2,7 @@ const MessageTypes = require("whatsapp-web.js").MessageTypes;
 const Admins = require("../../models/admins");
 const { encryptContact } = require("../../middleware/hashing");
 const config = require('config');
+const bcrypt = require('bcrypt');
 
 const asyncCallWithTimeout = async (asyncPromise, timeLimit) => {
   let timeoutHandle;
@@ -102,10 +103,11 @@ const mergeChats = async (oldChats, newChats) => {
 };
 
 const addDefaultAdmin = async () => {
-
+  password = "12345";
+  hashedPassword = bcrypt.hashSync(password, 10);
   const data = {
     username: "admin",
-    password: "$2b$10$jw1uUYEFySJSb5xzRRAUHuiIJW5TlGkfXKJHNFBVgOtWotuNGaVvK",
+    password: hashedPassword,
     name: "admin",
     last_name: "admin",
     contactInfo: {

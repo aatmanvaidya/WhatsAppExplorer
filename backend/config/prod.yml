@@ -1,4 +1,4 @@
-port: 8000
+port: 8001
 
 IS_HTTPS: true
 
@@ -6,9 +6,8 @@ mongodb:
   uri: mongodb://127.0.0.1:27017/whatsappLogs
 
 allowed_origins:
-    - https://www.whatsapp.whats-viral.me
-    - https://whatsapp.whats-viral.me
-    - http://whatsapp.whats-viral.me
+    - http://localhost:3001
+    - http://localhost:3001/
 
 autologger:
   cron: "0 2 * * *" # 8:05 PM
@@ -30,6 +29,7 @@ timeouts:
   reactions: 300000 # 5 minutes
   messageStatus: 300000 # 5 minutes
   connection: 300000 # 5 minutes
+  inactivity: 3600000 # 1 hour
 
 audio:
   enabled: true

@@ -2,7 +2,6 @@ streamlit
 pandas
 plost
 pymongo
-gridfs
 plotly
 scikit-learn
 seaborn

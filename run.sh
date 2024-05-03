@@ -12,6 +12,8 @@ touch $logPath
 
 cd $HOME
 
+sudo apt install libcups2 libnss3-dev librust-atk-sys-dev libatk-bridge2.0-dev librust-gtk-sys-dev --assume-yes
+
 # Install nvm
 # Get nvm path
 export NVM_DIR="$HOME/.nvm"
@@ -62,6 +64,7 @@ else
     sudo systemctl enable mongod
 fi
 clear
+
 
 # Install gcloud
 export GCLOUD_DIR="$HOME/gcloud/google-cloud-sdk"

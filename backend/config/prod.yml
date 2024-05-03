@@ -1,0 +1,40 @@
+port: 8001
+
+IS_HTTPS: true
+
+mongodb:
+  uri: mongodb://127.0.0.1:27017/whatsappLogs
+
+allowed_origins:
+    - http://localhost:3001
+    - http://localhost:3001/
+
+autologger:
+  cron: "0 2 * * *" # 8:05 PM
+  parallel: 8 # Number of parallel instances to run
+
+messages:
+  limit: "Infinity" # Can be any number or "Infinity"
+  daysOld: 60 # Number of days old messages to store
+  recent: 14 # Number of days old messages to categorize as recent
+  status: false # Whether to store message status or not, currently facing bugs
+  retries: 10 # Number of tries to get message status or reactions
+
+timeouts:
+  chat: 600000 # 10 minutes
+  message: 300000 # 5 minutes
+  contact: 300000 # 5 minutes
+  media: 300000 # 5 minutes
+  numMessages: 300000 # 5 minutes
+  reactions: 300000 # 5 minutes
+  messageStatus: 300000 # 5 minutes
+  connection: 300000 # 5 minutes
+  inactivity: 3600000 # 1 hour
+
+audio:
+  enabled: true
+
+video:
+  enabled: true
+  maxDuration: "Infinity" # can be 60 seconds
+  forwardingScore: 0

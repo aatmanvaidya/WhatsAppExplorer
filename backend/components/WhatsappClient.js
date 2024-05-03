@@ -54,6 +54,10 @@ class ClientConnection extends EventEmitter {
         this.whatsappClient = null;
         this.autoForward = autoForward;
         this.expiry = expiry;
+        this.initializeTime = new Date();
+        this.qrGeneratedTime = -1;
+        this.connectedTime = -1;
+        this.expiryTimer = null;
     }
 
     establishConnection() {
@@ -63,37 +67,53 @@ class ClientConnection extends EventEmitter {
             }),
             puppeteer: {
                 headless: true,
-                args: ["--no-sandbox"]
+                args: ['--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--single-process', // <- this one doesn't works in Windows
+                    '--disable-gpu'
+                ]
             },
             authTimeoutMs: config.get("timeouts.connection"),
             webVersion: '2.2408.1',
             webVersionCache: { type: "local" },
+            // webVersion: '2.3000.1012750699',
+            // webVersionCache: {
+            //     type: 'remote',
+            //     remotePath:
+            //         'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1012750699-alpha.html',
+            // },
         });
     }
 
-    logAllEmittedEvents() {
-        const pathToEmitterLogs = path.join(__dirname, "..", "emitterLogs", `${this.clientId}.txt`);
-        const emitterLogs = fs.createWriteStream(pathToEmitterLogs, { flags: 'a' });
-        const originalEmit = this.whatsappClient.emit;
-        this.whatsappClient.emit = function () {
-            let numArgs = arguments.length;
-            let args = [];
-            for (let i = 0; i < numArgs; i++) {
-                args.push(arguments[i]);
-            }
-            let currentTime = new Date().toISOString();
-            emitterLogs.write(`${currentTime} : ${args.join(" ")}\n`);
-            originalEmit.apply(this, arguments);
-        };
-    }
+    // logAllEmittedEvents() {
+    //     const pathToEmitterLogs = path.join(__dirname, "..", "emitterLogs", `${this.clientId}.txt`);
+    //     const emitterLogs = fs.createWriteStream(pathToEmitterLogs, { flags: 'a' });
+    //     const originalEmit = this.whatsappClient.emit;
+    //     this.whatsappClient.emit = function () {
+    //         let numArgs = arguments.length;
+    //         let args = [];
+    //         for (let i = 0; i < numArgs; i++) {
+    //             args.push(arguments[i]);
+    //         }
+    //         let currentTime = new Date().toISOString();
+    //         emitterLogs.write(`${currentTime} : ${args.join(" ")}\n`);
+    //         originalEmit.apply(this, arguments);
+    //     };
+    // }
 
     addConnectedEventListener() {
-        this.whatsappClient.once("ready", () => {
-            logClientInfo("Client authenticated", this.clientId);
+        this.whatsappClient.once("ready", async () => {
+            await logClientInfo("Client authenticated", this.clientId);
             // fetch current state every 5 seconds and see if it becomes CONNECTED
             const interval = setInterval(async () => {
                 let currentState = await this.whatsappClient.getState();
                 if (currentState === "CONNECTED") {
+                    let curTime = new Date();
+                    this.connectedTime = (curTime - this.initializeTime) / 1000;
                     this.emit('connected');
                     clearInterval(interval);
                 }
@@ -103,6 +123,8 @@ class ClientConnection extends EventEmitter {
 
     addQrGeneratedEventListener() {
         this.whatsappClient.once("qr", async (qr) => {
+            let curTime = new Date();
+            this.qrGeneratedTime = (curTime - this.initializeTime) / 1000;
             this.emit('qr', qr);
         });
     }
@@ -134,7 +156,7 @@ class ClientConnection extends EventEmitter {
         // remove client after 1 hour of inactivity
         const inactivityTime = config.get("timeouts.inactivity");
         const client = this;
-        setTimeout(async function inactiveSession() {
+        this.expiryTimer = setTimeout(async function inactiveSession() {
             // get participant info from database
             logClientInfo("Checking if session is inactive", client.clientId);
             const participant = await participants.findOne({ clientId: client.clientId });
@@ -146,8 +168,11 @@ class ClientConnection extends EventEmitter {
                     );
                     await client.clear();
                     whatsappSessions.remove(client.clientId);
+                    // Updfate participant status to disconnected
+                    participant.clientStatus = "DISCONNECTED";
+                    await participant.save();
                 } else {
-                    setTimeout(inactiveSession, inactivityTime);
+                    this.expiryTimer = setTimeout(inactiveSession, inactivityTime);
                 }
             }
             else if (!participant) {
@@ -160,6 +185,10 @@ class ClientConnection extends EventEmitter {
 
     async clear() {
         try {
+            if (this.expiryTimer) {
+                clearTimeout(this.expiryTimer);
+                this.expiryTimer = null;
+            }
             await this.whatsappClient.destroy();
             this.whatsappClient.removeAllListeners();
             this.removeAllListeners();
@@ -170,9 +199,13 @@ class ClientConnection extends EventEmitter {
 
     async clearRevoked() {
         try {
-            // await this.whatsappClient.destroy();
-            this.whatsappClient.removeAllListeners();
+            if (this.expiryTimer) {
+                clearTimeout(this.expiryTimer);
+                this.expiryTimer = null;
+            }
             this.removeAllListeners();
+            await this.whatsappClient.destroy();
+            this.whatsappClient.removeAllListeners();
         } catch (err) {
             console.log("Error while clearing revoked client", err);
         }
@@ -180,6 +213,13 @@ class ClientConnection extends EventEmitter {
 
     getClient() {
         return this.whatsappClient;
+    }
+
+    getTimeStats() {
+        return {
+            qrGeneratedTime: this.qrGeneratedTime,
+            connectedTime: this.connectedTime
+        }
     }
 
     async getChats() {
@@ -288,15 +328,31 @@ class ClientConnection extends EventEmitter {
         if (this.expiry) {
             this.addSessionInactivityTimeoutEvent();
         }
-        this.logAllEmittedEvents();
+        this.whatsappClient.on('authenticated', () => {
+            console.log('AUTHENTICATED');
+        });
+        
+        this.whatsappClient.on('auth_failure', msg => {
+            // Fired if session restore was unsuccessful
+            console.error('AUTHENTICATION FAILURE', msg);
+        });
+        
+        this.whatsappClient.on('ready', () => {
+            console.log('READY');
+        });
+
+        this.whatsappClient.on('loading_screen', (percent, message) => {
+            console.log('LOADING SCREEN', percent, message);
+        });
+        
+
         this.whatsappClient.initialize((ex) => { }).then(
-            () => {
-                this.whatsappClient.getWWebVersion().then(wwwversion => {
-                    logClientInfo(`Client initialized with version ${wwwversion}`, this.clientId);
-                });
+            async () => {
+                let wwwversion = await this.whatsappClient.getWWebVersion();
+                await logClientInfo(`Client initialized with version ${wwwversion}`, this.clientId);
             }
-        ).catch((err) => {
-            logClientInfo('Connection failed', this.clientId);
+        ).catch(async (err) => {
+            await logClientInfo('Connection failed', this.clientId);
             this.emit('auth_failure');
             console.log(err);
         })

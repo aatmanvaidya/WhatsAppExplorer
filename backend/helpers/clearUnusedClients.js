@@ -10,6 +10,10 @@ function getDirectories(dir) {
 
 const clearUnusedSessions = async () => {
     const dir = path.resolve(path.join(__dirname, '..', '.wwebjs_auth'));
+    // check if path exists
+    if (!fs.existsSync(dir)) {
+        return;
+    }
     const sessions = getDirectories(dir);
     sessions.forEach(async session => {
         const clientId = session.substring(8);
@@ -22,6 +26,9 @@ const clearUnusedSessions = async () => {
 
 const clearSession = (clientId) => {
     const dir = path.resolve(path.join(__dirname, '..', '.wwebjs_auth'));
+    if (!fs.existsSync(dir)) {
+        return;
+    }
     fs.rm(path.join(dir, `session-${clientId}`), { recursive: true }, (err) => {
         if (err) {
             console.log("Error clearing session", err);

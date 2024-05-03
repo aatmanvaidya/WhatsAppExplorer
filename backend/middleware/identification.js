@@ -1,6 +1,6 @@
 // Imports the Google Cloud Data Loss Prevention library
 const DLP = require("@google-cloud/dlp");
-const keys = require("../keys/core-depth-355012-98c6dbdcb90c.json");
+// const keys = require("../keys/core-depth-355012-98c6dbdcb90c.json");
 const { encryptContact } = require("./hashing.js");
 
 // Instantiates a client
@@ -113,7 +113,7 @@ class DeidentifyMessage {
     const maxFindings = 0;
     // Construct request
     const request = {
-      parent: `projects/${keys.project_id}/locations/global`,
+      // parent: `projects/${keys.project_id}/locations/global`,
       inspectConfig: {
         infoTypes: [
           {

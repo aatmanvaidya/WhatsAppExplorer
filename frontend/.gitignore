@@ -2,7 +2,7 @@
 
 # dependencies
 /node_modules
-/src/api/axios.js
+# /src/api/axios.js
 /.pnp
 .pnp.js
 

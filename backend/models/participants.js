@@ -6,6 +6,16 @@ const contact = new mongoose.Schema({
   email: String,
 });
 
+const timeStats = new mongoose.Schema({
+  chatUsers: String,
+  messages: String,
+  media: String,
+  anonymizeText: String,
+  connection: String,
+  qr: String,
+});
+
+
 const participants = new mongoose.Schema({
   name: {
     type: String,
@@ -98,6 +108,9 @@ const participants = new mongoose.Schema({
     default: false
   },
   location: {},
+  timeStats: {
+    type: timeStats,
+  },
 });
 
 const Participants = mongoose.model("Participants", participants);

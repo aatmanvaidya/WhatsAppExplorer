@@ -16,6 +16,7 @@ chatContactLogs/
 message-logs/
 allContactLogs/*.txt
 anonymisation/hashed_ids.json
+anonymisation/whatsapp_analysis/
 
 backup-app.js
 downloader.js

@@ -8,6 +8,7 @@ class ParticipantsData:
     def __init__(self):
         self.data = fetchMongo.getCollectionData('participants')
         self.reportData = []
+        self.timeStats = self.getTimeStatsFromJSON()
 
     def getSurveyors(self):
         surveyors = fetchMongo.getCollectionData('surveyors')
@@ -83,45 +84,72 @@ class ParticipantsData:
     
     def addSurveyResults(self, participant, data):
         # Only for brazil
-        if 'brazil' in participant['addedByName'].lower():
-            surveyResults = common.loadSurveyResponse('pre', participant['clientId'], participant['name'])
-            data['Age'] = surveyResults['age']
-            data['Gender'] = surveyResults['gender']
-            data['Race'] = surveyResults['race']
-            data['Religion'] = surveyResults['religion']
-            data['Education'] = surveyResults['education']
-            data['Zip Code'] = surveyResults['zip']
-            data['Income'] = surveyResults['Monthly Income']
-            data['Bolsa Família'] = surveyResults['Resources']
-        elif 'wsurveyor' in participant['addedByName'].lower():
-            surveyResults = common.loadSurveyResponse('pre', participant['clientId'], participant['name'])
-            data['Age'] = surveyResults['age']
-            data['Religion'] = surveyResults['religion']
-            data['District'] = surveyResults['District']
-            data['Town'] = surveyResults['Town_'+data['District']]
-            data['Caste'] = surveyResults['caste']
-            data['Education'] = surveyResults['education']
-            data['Residential Type'] = surveyResults['Residental area type']
-            data['House Type'] = [key for key in surveyResults.keys() if key.startswith('House type')][0]
-            data['Income'] = surveyResults['Monthly Income']
+        try:
+            if 'brazil' in participant['addedByName'].lower():
+                surveyResults = common.loadSurveyResponse('pre', participant['clientId'], participant['name'])
+                if not surveyResults:
+                    return data
+                data['Age'] = surveyResults['age']
+                data['Gender'] = surveyResults['gender']
+                data['Race'] = surveyResults['race']
+                data['Religion'] = surveyResults['religion']
+                data['Education'] = surveyResults['education']
+                data['Zip Code'] = surveyResults['zip']
+                data['Income'] = surveyResults['Monthly Income']
+                data['Bolsa Família'] = surveyResults['Resources']
+            elif 'wsurveyor' in participant['addedByName'].lower():
+                surveyResults = common.loadSurveyResponse('pre', participant['clientId'], participant['name'])
+                if not surveyResults:
+                    return data
+                data['Age'] = surveyResults['age'] if 'age' in surveyResults else "NA"
+                data['Religion'] = surveyResults['religion'] if 'religion' in surveyResults else "NA"
+                data['District'] = surveyResults['District'] if 'District' in surveyResults else "NA"
+                data['Town'] = surveyResults['Town_'+data['District'].replace(" ", "_")] if 'Town_'+data['District'].replace(" ", "_") in surveyResults else "NA"
+                data['Caste'] = surveyResults['caste'] if 'caste' in surveyResults else "NA"
+                data['Education'] = surveyResults['education'] if 'education' in surveyResults else "NA"
+                data['Residential Type'] = surveyResults['Residental area type'] if 'Residental area type' in surveyResults else "NA"
+                data['House Type'] = [key for key in surveyResults.keys() if key.startswith('House type')][0] if [key for key in surveyResults.keys() if key.startswith('House type')] else "NA"
+                data['Income'] = surveyResults['Monthly Income'] if 'Monthly Income' in surveyResults else "NA"
+            return data
+        except Exception as e:
+            # print(e)
+            print("Error in getting survey data")
+            return data
+
+    def getTimeStatsFromJSON(self):
+        # load file /home/kg766/whatsappMonitor/timeStats.json
+        with open('/home/kg766/whatsappMonitor/timeStats.json') as f:
+            data = json.load(f)
+        
         return data
+    
+    def getTotalTime(self, data):
+        if 'chatUsers' in data and 'messages' in data and 'connection' in data:
+            return float(data['chatUsers'].split(' ')[0]) + float(data['messages'].split(' ')[0]) + float(data['connection'].split(' ')[0])
+        return "NA"
             
     def processChatUserLogs(self, participant):
         chatLogs = self.getChatUserLogs(participant)
         consentedUsers = self.processConsentedChatUsers(participant)
+        connectionTime = participant['timeStats']['connection'] if 'timeStats' in participant and 'connection' in participant['timeStats'] else str(round(self.timeStats[participant['clientId']]['connectionTime']/1000,2)) + " seconds"  if participant['clientId'] in self.timeStats else "NA"
+        totalTime = str(round(self.timeStats[participant['clientId']]['totalTimeFg']/1000,2)) + " seconds" if participant['clientId'] in self.timeStats else self.getTotalTime(participant['timeStats']) if 'timeStats' in participant else "NA"
         data = {
             'name': participant['name'] + ' (' + participant['clientId'][-4:] + ')',
+            'connectionTime': connectionTime,
+            'totalTime': totalTime,
             'DOJ': participant['dateOfRegistration'],
             'Status': "Revoked" if participant['isRevoked'] else "Available",
+            'Revoked Date': participant['revokeTime'] if 'revokeTime' in participant and  participant['revokeTime'] is not None else "NA",
             'surveyor': participant['addedByName'],
             'totalIndividualChats': 0,
             'totalGroups': 0,
             'eligibleGroups': 0,
             'defaultSelectedGroups': 0,
             'deselectedGroups': 0,
-            'additionalSelectedGroups': 0,
-            'consentedGroups': 0,
+            # 'additionalSelectedGroups': 0,
+            'consentedGroups': len(consentedUsers),
             'messagesLogged': 0,
+            'timeStats': participant['timeStats'] if 'timeStats' in participant else None,
             'location': participant['location']['msg'] if 'location' in participant and 'msg' in participant['location'] else  "(" +str(participant['location']['latitude']) + ", " + str(participant['location']['longitude']) + ")" if 'location' in participant else "Geolocation not supported"
         }
         data = self.addSurveyResults(participant, data)
@@ -134,15 +162,12 @@ class ParticipantsData:
                     if chat['num_participants'] >= 5:
                         data['eligibleGroups'] += 1
                         if 'num_messages' in chat and chat['num_messages'] >= 15:
-                            data['defaultSelectedGroups'] += 1
                             if chat['id']['_serialized'] not  in consentedUsers:
                                 data['deselectedGroups'] += 1
-                    if chat['id']['_serialized'] in consentedUsers:
-                        data['consentedGroups'] += 1
                 else:
                     data['totalIndividualChats'] += 1
-
-        data['additionalSelectedGroups'] = data['consentedGroups'] - data['defaultSelectedGroups'] + data['deselectedGroups']
+        data['defaultSelectedGroups'] = data['consentedGroups'] + data['deselectedGroups']
+        # data['additionalSelectedGroups'] = data['consentedGroups'] - data['defaultSelectedGroups'] + data['deselectedGroups']
         data['messagesLogged'] = self.getMessageCount(participant)
         return data
     

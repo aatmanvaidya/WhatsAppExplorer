@@ -92,7 +92,8 @@ async function getChatNamesbyId(clientID, chatIDs) {
     const decryptedId =
       decryptContact(chatID.split("@")[0]) + "@" + chatID.split("@")[1];
     let chat = await client.getChatById(decryptedId);
-    chats.push(chat.name);
+    if (chat)
+      chats.push(chat.name);
   }
   return chats;
 }
@@ -103,10 +104,20 @@ app.post("/consented-chats", verifyJWT, async (req, res) => {
   // Saving consented chat users
   // Finding in participants model by clientId
   const clientId = req.body.clientId;
+  let timeStats = {
+    'chatUsers': '',
+    'messages': '',
+    'media': '',
+    'anonymizeText': '',
+    'connection': '',
+    'qr': '',
+  };
   await logClientInfo("Logging all messages from consented chats", clientId);
   const participant = await participants.findOne({ clientId: clientId });
   if (participant) {
-
+    timeStats['chatUsers'] = participant.timeStats['chatUsers']
+    timeStats['connection'] = participant.timeStats['connection']
+    timeStats['qr'] = participant.timeStats['qr']
     // compare consented chat users with existing consented chat users
     if (participant.consentedChatUsers.length > 0 && checkIfConsentedChatsUpdated(participant.consentedChatUsers, consentedChats)) {
       await logClientInfo("NOTE: CONSENTED CHATS UPDATED!", clientId);
@@ -142,7 +153,10 @@ app.post("/consented-chats", verifyJWT, async (req, res) => {
   //   console.log(chatID);
   // }
   try {
+    let startTime = new Date();
     let msgresult = await logMessages(consentedChats, 0, req.body.clientId, req.body.participantId, req.body.clientName, minDate);
+    let endTime = new Date();
+    timeStats["messages"] = (endTime - startTime) / 1000 + " seconds";
   } catch (err) {
     console.log(err);
     participant.disconnectedPrematurely = true;
@@ -173,7 +187,10 @@ app.post("/consented-chats", verifyJWT, async (req, res) => {
   participant.clientStatus = "DOWNLOADING MEDIA";
   await participant.save();
   try {
+    let startTime = new Date();
     let mediaresult = await downloadMedia(clientId);
+    let endTime = new Date();
+    timeStats["media"] = (endTime - startTime) / 1000 + " seconds";
   }
   catch (err) {
     console.log(err);
@@ -195,11 +212,15 @@ app.post("/consented-chats", verifyJWT, async (req, res) => {
   await logClientInfo("Anonymizing data", clientId);
   participant.clientStatus = "ANONYMIZING DATA";
   await participant.save();
+  let startTime = new Date();
   await anonymizeData(clientId);
+  let endTime = new Date();
+  timeStats["anonymizeText"] = (endTime - startTime) / 1000 + " seconds";
 
   if (participant) {
     participant.isLogging = false;
     participant.clientStatus = "DISCONNECTED";
+    participant.timeStats = timeStats;
     await participant.save();
   }
 
@@ -318,7 +339,7 @@ app.post("/register-surveyor", async (req, res) => {
       addedBy: adminId._id,
       isIndividual: req.body.isIndividual ? req.body.isIndividual : false,
       surveyDisabled: req.body.surveyDisabled ? req.body.surveyDisabled : false,
-      region: req.body.region ? req.body.region : 'en',
+      region: req.body.region ? req.body.region : 'en', // en, hi, pt, es
     });
 
     // console.log(result);
@@ -663,7 +684,7 @@ app.get("/getClientState", async (req, res) => {
 });
 
 //add new participant
-const addParticipant = async (particpantData, clientInfo) => {
+const addParticipant = async (particpantData, clientInfo, connectionStats) => {
   const surveyor = particpantData.surveyor;
   const sID = await Surveyors.findOne({ username: surveyor });
   // check if participant exists
@@ -678,6 +699,11 @@ const addParticipant = async (particpantData, clientInfo) => {
     return "error adding user";
   }
 
+  let timeStats = {
+    'connection': connectionStats.connectedTime,
+    'qr': connectionStats.qrGeneratedTime,
+  }
+
   const p = new participants({
     name: particpantData.name,
     clientId: particpantData.clientId,
@@ -689,6 +715,7 @@ const addParticipant = async (particpantData, clientInfo) => {
     contactInfo: particpantData.contactInfo,
     surveyDisabled: sID.surveyDisabled,
     location: particpantData.location,
+    timeStats: timeStats,
   });
 
   sID.participantsAdded.push(p._id);
@@ -893,22 +920,23 @@ app.post("/dailyReport", verifyJWT, async (req, res) => {
 app.get("/killClient", async (req, res) => {
   const client = whatsappSessions.get(req.query.clientId);
   if (client !== undefined) {
-    await client.removeAllListeners("qr");
-    client.on("qr", async () => {
-      await logClientInfo("Removing Client", req.query.clientId);
-      await client.clear();
-      delete whatsappSessions.remove(req.query.clientId);
-    });
+    // await client.removeAllListeners("qr");
+    // client.on("qr", async () => {
+    await logClientInfo("Removing Client", req.query.clientId);
+    await client.clear();
+    whatsappSessions.remove(req.query.clientId);
+    // });
   }
   res.status(200).send("Killed");
 });
 
+// Wehen adding whatsapp account for the first time.
 app.post("/authUser2", async (req, res) => {
   const clientId = req.body.clientId;
   // console.log("Creating user: ", clientId);
 
   // First time registration, client wont be in the whatsappSessions
-  const client = new ClientConnection(req.body.clientId, false, true);
+  const client = new ClientConnection(req.body.clientId, false, true, null);
   whatsappSessions.put(clientId, client);
   await logClientInfo("Connecting new participant", clientId);
 
@@ -923,6 +951,11 @@ app.post("/authUser2", async (req, res) => {
         res.status(200).send(url);
       }
     });
+    client.removeAllListeners("auth_failure");
+  });
+
+  client.once("auth_failure", () => {
+    res.status(500).send("Error");
   });
 
   client.connect();
@@ -965,7 +998,8 @@ app.post("/waitForClient", async (req, res) => {
       const participantData = req.body.participant;
       try {
         const clientInfo = await client.getInfo();
-        const result = await addParticipant(participantData, clientInfo);
+        const connectionStats = client.getTimeStats();
+        const result = await addParticipant(participantData, clientInfo, connectionStats);
         await logClientInfo("Participant added", req.body.clientId);
         res.status(200).send(result);
       } catch (err) {
@@ -973,24 +1007,30 @@ app.post("/waitForClient", async (req, res) => {
         res.status(200).send("error adding user");
       }
       // cache chat users
+      let timeStats = {};
       const participantId = await participants.findOne({ clientId: clientId });
       if (participantId) {
+        timeStats = participantId.timeStats;
         await logClientInfo("Logging all Chat Users for the first time", clientId);
         await participants.findByIdAndUpdate(participantId._id, {
           isLogging: true,
           clientStatus: "LOGGING CHATS",
         });
-        const result = await logAllChatNames(
+        const startTime = new Date();
+        const result = await  (
           clientId,
           participantId._id,
           participantData.name
         );
+        const endTime = new Date();
+        timeStats["chatUsers"] = (endTime - startTime) / 1000 + " seconds";
       }
       await client.clear();
       // client.removeAllListeners();
       await participants.findByIdAndUpdate(participantId._id, {
         clientStatus: "DISCONNECTED",
         isLogging: false,
+        timeStats: timeStats,
       });
       await logClientInfo(
         "Client disconnected after logging chat users",
@@ -1053,7 +1093,7 @@ app.post("/authUser", async (req, res) => {
     return;
   }
 
-  const client = new ClientConnection(req.body.clientId, false, true);
+  const client = new ClientConnection(req.body.clientId, false, true, participant.dateOfRegistration);
   whatsappSessions.put(req.body.clientId, client);
   await logClientInfo("Connecting...", req.body.clientId);
 
@@ -1094,6 +1134,7 @@ app.post('/save-survey', verifyJWT, async (req, res) => {
   const jsonData = req.body;
 
   // const timestamp = new Date().getTime();
+  // Survey type: 0 = pre, 1 = post
   const filename = `./formResponse/${jsonData.info.clientId}_${jsonData.info.surveyType}_${jsonData.info.clientName}.json`;
 
   fs.writeFile(filename, JSON.stringify(jsonData, null, 2), err => {

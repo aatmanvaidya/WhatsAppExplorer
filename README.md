@@ -162,13 +162,28 @@ GCLOUD_KEY_PATH=/path/to/gcloud-key.json/
 12. `GCLOUD_KEY_PATH`: The path to the Google Cloud key file. This is required for name anonymization using the google DLP library. The file should be stored in `backend/keys` directory.
 
 ### Monitoring Dashboard
-1. Open the file `run.conf` in the `monitoring` directory.
+1. Open the file `run.conf` in the `dashboard` directory.
 ```conf
 PORT=8501
 BASE_URL=monitoring
 ```
 2. `PORT`: The port on which the monitoring dashboard will run.
 3. `BASE_URL`: The base URL of the monitoring dashboard.
+
+1. Open the file `config.yml` in the `dashboard` directory.
+```yml
+# Survey Data
+survey: "path/to/backend/formResponse"
+
+# WhatsApp Data
+download_paths: [
+    'download/storage/path1',
+    'download/storage/path2',
+    'download/storage/path3'
+]
+```
+1. `survey`: The path to the survey responses collected during the data collection process. This is present in the 'formResponse' folder in the backend directory by default.
+2. `download_paths`: The paths to the downloaded WhatsApp data. These are the paths to the folders where the WhatsApp data is downloaded. This is the data path specified to the downloader tool (prod.yml->data->path) where all the media and chat data is stored.
 
 
 ## Running the application

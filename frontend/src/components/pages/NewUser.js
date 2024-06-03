@@ -296,6 +296,7 @@ function NewUser() {
             autoHideDuration: 5000,
             variant: "info",
           });
+          killClient(client_id);
         } else {
           console.log(error);
           enqueueSnackbar("Authentication Failed", {

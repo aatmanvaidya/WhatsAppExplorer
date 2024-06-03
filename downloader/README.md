@@ -35,3 +35,12 @@ backup:
     - The `mongodb.uri` field is the URI of the MongoDB database.
 4. `data`: The configuration for the data. The `path` field is the path to the directory where the data will be stored.
 5. `backup`: The configuration for the backup. The `duration` field is the number of days after which the backup will be createde e.g. `5` means the backup will be created every 5 days. (Note that for the recent 1 week, the backup will be created every day)
+
+<!-- Deprecated! -->
+6. Set up netlify service to deploy the WM status website 
+    ```sh
+        npm install netlify-cli
+        npx netlify login # complete netlify auth here
+        npx netlify sites:create --name <your webapp name> # note down the website url
+    ```
+ 

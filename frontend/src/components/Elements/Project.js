@@ -10,8 +10,10 @@ import ProjectImg4 from "../../assets/img/projects/4.png";
 import ProjectImg5 from "../../assets/img/projects/5.jpg";
 import ProjectImg6 from "../../assets/img/projects/6.jpg";
 import AddImage2 from "../../assets/img/add/add2.png";
+import { useTranslation } from 'react-i18next';
 
 export default function Projects() {
+  const { t } = useTranslation();
   return (
     <Wrapper id="projects">
       <div className="whiteBg">
@@ -30,7 +32,7 @@ export default function Projects() {
             <div className="col-xs-12 col-sm-4 col-md-4 col-lg-4">
               <ProjectBox
                 img={ProjectImg2}
-                title="Escolha os grupos para compartilha"
+                title={t('chooseThreadsToShare')}
                 text="We only collect data you wish to share with us. Choose the threads you want to share with us and we will start collecting data from those threads."
               />
             </div>
@@ -80,9 +82,8 @@ export default function Projects() {
             <AddRight>
               <h2 className="font40 extraBold mb-2">What's in it for you?</h2>
               <p className="font20">
-              Get exciting rewards based on the duration you wish to share your data. The minimum duration of the program is two weeks. 
+              The data you provide to the project will be useful to identify content spreading on WhatsApp, which is otherwise really difficult to access. Your data is anonymized and your personal information is never shared or even stored.
               <br />
-              Consult with our representatives to know more!
                 
               </p>
               {/* <ButtonsRow

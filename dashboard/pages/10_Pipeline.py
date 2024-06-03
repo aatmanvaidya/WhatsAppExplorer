@@ -69,7 +69,9 @@ else:
         avgMediaDownload = totalMedia / numConnected if numConnected > 0 else 0
         
         # progress bar
-        percent = (numConnected / totalParticipants)
+        totalDone = numConnected + numRevoked + numTimedOut
+        maxProgress = todaysData['totalRecords'] if 'totalRecords' in todaysData and todaysData['totalRecords'] > 0 else totalParticipants
+        percent = (totalDone / maxProgress)
         if todaysData['status'] == 'running':
             col11, col12 = col1.columns([1, 4])
             col11.metric(label='Status', value=statusIcon)
@@ -94,7 +96,7 @@ else:
         col2.metric(label='Avg Msg Download', value=round(avgMessageDownload))
         col3.metric(label='Avg Media Download', value=round(avgMediaDownload))
         
-        progressStr = str(numConnected) + '/' + str(totalParticipants)
+        progressStr = str(totalDone) + '/' + str(maxProgress)
         col1.metric(label='Total Messages', value=totalMessages)
         col2.metric(label='Total Media', value=totalMedia)
         col3.metric(label='Progress', value=progressStr)

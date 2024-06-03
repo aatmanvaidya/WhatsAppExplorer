@@ -48,46 +48,17 @@ export default function Contact() {
       <div className="lightBg">
         <div className="container">
           <HeaderInfo>
-            <h1 className="font40 extraBold">Let's get in touch</h1>
+            <h1 className="font40 extraBold">About the project</h1>
             <p className="font16 mt-5">
-              You can contact us at:
-              <li className="font16">Mail: ourmail@gmail.com </li>
-            <li className="font16">Phone: +99 123 456 789</li>
+              WhatsApp Explorer is an academic project run in collaboration between Kiran Garimella at Rutgers University and Simon Chauchard at UC3M. You can contact us at: kiran.garimella@rutgers.edu and simon.chauchard@uc3m.es.
               <br />
-              Or fill out the form below and we will get back to you as soon as possible.
             </p>
+	    <p className="font16 mt-5">
+              WhatsApp Explorer is funded generously by the European Research Council through the POLARCHATS project. Additional support comes from Knight Foundation and the National Science Foundation.
+              <br />
+            </p>
+
           </HeaderInfo>
-          <div className="row" style={{ paddingBottom: "30px" }}>
-            <div className="col-xs-12 col-sm-12 col-md-6 col-lg-6">
-              <Form onSubmit={handleSubmit}>
-                <label className="font13">First name:</label>
-                <input type="text" id="fname" name="fname" className="font20 extraBold" value={name} onChange={onChangeName} />
-                <label className="font13">Email:</label>
-                <input type="text" id="email" name="email" className="font20 extraBold" value={email} onChange={onChangeEmail} />
-                <label className="font13">Subject:</label>
-                <input type="text" id="subject" name="subject" className="font14 extraBold" value={subject} onChange={onChangeSubject} />
-                <textarea rows="4" cols="50" type="text" id="message" name="message" className="font14" value={message} onChange={onChangeMessage} />
-              </Form>
-              <SumbitWrapper className="flex">
-                <ButtonInput type="submit" value="Send Message" className="pointer animate radius8" style={{ maxWidth: "220px" }} onClick={handleSubmit} />
-              </SumbitWrapper>
-            </div>
-            <div className="col-xs-12 col-sm-12 col-md-6 col-lg-6 flex">
-              <div style={{ width: "50%" }} className="flexNullCenter flexColumn">
-                <ContactImgBox>
-                  <img src={ContactImg1} alt="office" className="radius6" />
-                </ContactImgBox>
-                <ContactImgBox>
-                  <img src={ContactImg2} alt="office" className="radius6" />
-                </ContactImgBox>
-              </div>
-              <div style={{ width: "50%" }}>
-                <div style={{ marginTop: "100px" }}>
-                  <img src={ContactImg3} alt="office" className="radius6" />
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </Wrapper>

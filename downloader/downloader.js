@@ -148,6 +148,8 @@ async function main() {
       .toArray();
     for (const message of messages) {
       let username = message.userName;
+      // if (username !== "shreyashIndividual")
+      //   continue;
       writeLog(
         `Downloading files for ${username} for chat ${message.chatName}`
       );
@@ -163,6 +165,9 @@ async function main() {
       const fn = message.messages.filename;
       message.messages = await getJSONLog(bucket, message.messages.filename);
       const mlength = message.messages.length;
+      if (mlength === 0) {
+        continue;
+      }
       // export messages
       const filesDir = pathLib.resolve(dir, './messageFiles');
       if (!fs.existsSync(filesDir)) {
@@ -222,6 +227,7 @@ async function main() {
       if (fs.existsSync(old_dir) && old_date.getDay() != 1) {
         fs.rmdirSync(old_dir, { recursive: true });
       }
+      console.log("Success!");
     } catch (err) {
       writeLog("Error updating website");
       writeLog(err);
@@ -230,7 +236,7 @@ async function main() {
   }
 }
 
-main().catch(console.error);
+main();
 
 function extractFileFromDB(filename, bucket) {
   const downloadStream = bucket.openDownloadStreamByName(filename);
@@ -244,7 +250,7 @@ function extractFileFromDB(filename, bucket) {
     });
 
     downloadStream.on("error", () => {
-      reject();
+      reject(Error("Failed to extract the file"));
     });
 
     downloadStream.on("end", () => {
@@ -276,6 +282,12 @@ async function downloadFile(name, path, bucket, caption, msgData) {
     let fname = "";
     if (metadata.originalfilename) {
       fname = metadata.originalfilename.split(".")[0];
+      // Make sure fname does not exceed 80 characters
+      if (fname.length > 80) {
+        fname = fname.substring(0, 80);
+      }
+      // replace all the special characters with an underscore
+      fname = fname.replace(/[^a-zA-Z0-9]/g, "_");
       extension =
         metadata.originalfilename.split(".")[
         metadata.originalfilename.split(".").length - 1
@@ -297,7 +309,7 @@ async function downloadFile(name, path, bucket, caption, msgData) {
     }
 
     const media = await extractFileFromDB(name, bucket);
-
+    
     // Save to file
     try {
       // convert the file to base64
@@ -321,9 +333,15 @@ async function downloadFile(name, path, bucket, caption, msgData) {
 }
 
 async function getJSONLog(bucket, filename) {
-  const data = await extractFileFromDB(filename, bucket);
-  const json = JSON.parse(data.toString());
-  return json;
+  try {
+    const data = await extractFileFromDB(filename, bucket);
+    const json = JSON.parse(data.toString());
+    return json;
+  }
+  catch (err) {
+    console.log("Failed to get the JSON log:", filename);
+    return [];
+  }
 }
 
 const exportData = async (dataArray, dir, fileName) => {
@@ -344,8 +362,9 @@ async function exportFileFromDB(filename, bucket, dir) {
   // extract the file from the database along with its metadata
   const promise = new Promise((resolve, reject) => {
     downloadStream.pipe(outputStream);
-    downloadStream.on("error", () => {
-      reject();
+    downloadStream.on("error", (err) => {
+      console.log("Error exporting file:", err);
+      reject(Error("Failed to export the file"));
     });
 
     downloadStream.on("end", () => {

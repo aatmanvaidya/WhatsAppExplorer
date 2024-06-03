@@ -11,12 +11,15 @@ import shutil
 import data.loadMessages as loadMessages
 import data.loadFiles as loadFiles
 import data.loadParticipants as loadParticipants
+import data.common as common
 participants_data = loadParticipants.ParticipantsData()
 messageData = loadMessages.MessageData()
 
+config = common.getConfig()
+
 # Downloaded Data Path
-dataDir = '/mnt/storage/kg766/WhatsappMonitorData/'
-backupDir = '/home/kg766/whatsappMonitor/backup/'
+allDownloadDirectories = config['download_paths']
+# backupDir = '/home/kg766/whatsappMonitor/backup/'
 
 # Function that returns directory size in MBs
 # def getDirectorySize(directory):
@@ -52,6 +55,9 @@ backupDir = '/home/kg766/whatsappMonitor/backup/'
 #     return total_size, date_map
 # Function that returns directory size in MBs
 def getDirectorySize(directory):
+    # filename_size_map = {}
+    # with open('filename_size_map.json', 'r') as file:
+    #     filename_size_map = json.load(file)
     total_size = 0
     category_map = {
         'image': 0,
@@ -72,6 +78,7 @@ def getDirectorySize(directory):
                 # Convert creation time to a human-readable date format
                 creation_date = datetime.datetime.fromtimestamp(creation_time).strftime('%Y-%m-%d')
                 size = os.path.getsize(fp) / (1024*1024)
+                # filename_size_map[f] = size
                 total_size += size
                 date_map[creation_date] = date_map.get(creation_date, 0) + size
 
@@ -89,7 +96,7 @@ def getDirectorySize(directory):
                         if 'message' in json_data and 'duration' in json_data['message']:
                             duration = json_data['message']['duration']
                             durations.append([int(duration),size])
-                elif extension in ['mp3', 'm4a', 'ogg', 'wav']:
+                elif extension in ['mp3', 'm4a', 'ogg', 'wav', 'oga']:
                     category_map['audio'] += size
                 elif extension in ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx']:
                     category_map['document'] += size
@@ -99,7 +106,28 @@ def getDirectorySize(directory):
                     category_map['gif'] += size
                 else:
                     category_map['other'] += size
+    
+    # with open('filename_size_map.json', 'w') as file:
+    #     json.dump(filename_size_map, file)
     return total_size, date_map, category_map, durations
+
+def getDiskUsage():
+    # Get free space and used space in GBs for each drive to display in pie chart
+    du = {}
+    for dpath in downloadDirectories:
+        splitPath = dpath.split('/')
+        drive = splitPath[1] + '/' + splitPath[2] + '/'
+        total, used, free = shutil.disk_usage(dpath)
+        total = round(total / (1024 * 1024 * 1024), 2)
+        used = round(used / (1024 * 1024 * 1024), 2)
+        free = round(free / (1024 * 1024 * 1024), 2)
+        du[drive] = {
+            'total': total,
+            'used': used,
+            'free': free,
+        }
+    return du
+        
 
 dataMapping = {}
 TSMap = {}
@@ -107,13 +135,26 @@ TSMap = {}
 # Sidebar
 st.sidebar.title('WM Dashboard')
 
+# Multi select box to select multiple download directories
+driveNameMap = {}
+for d in allDownloadDirectories:
+    driveNameMap[d.split('/')[2]] = d
+downloadDirectories = st.sidebar.multiselect('Select download directories', [d.split('/')[2] for d in allDownloadDirectories])
+downloadDirectories = [driveNameMap[d] for d in downloadDirectories]
+
 # Radio button to select find by : Username or Surveyor
 select_all_users = st.sidebar.checkbox('Select all users')
 if select_all_users:
     userNames = messageData.getUserNames()
     for user in userNames:
             message_ids = messageData.getAllMessageIds(user)
-            dataMapping[user] = [dataDir + 'downloaded-media/' + user.split('(')[0].strip() + '-' + message_id for message_id in message_ids]
+            tempList = []
+            for dataDir in downloadDirectories:
+                path1 = dataDir + 'downloaded-media/' + user.split('(')[0].strip() + '-'
+                for message_id in message_ids:
+                    if os.path.exists(path1 + message_id):
+                        tempList.append(path1 + message_id)
+            dataMapping[user] = tempList
 else:
     find_by = st.sidebar.radio('Find by', ['User', 'Surveyor'])
 
@@ -134,8 +175,13 @@ else:
         st.sidebar.subheader('Chat Name')
         chatName = st.sidebar.multiselect('Chat', chatNames, default=default_chatNames)
         message_ids = messageData.getMessageIds(userName, chatName)
-        
-        dataMapping[userName] = [dataDir + 'downloaded-media/' + userName.split('(')[0].strip() + '-' + message_id for message_id in message_ids]
+        tempList = []
+        for dataDir in downloadDirectories:
+            path1 = dataDir + 'downloaded-media/' + userName.split('(')[0].strip() + '-'
+            for message_id in message_ids:
+                if os.path.exists(path1 + message_id):
+                    tempList.append(path1 + message_id)
+        dataMapping[userName] = tempList
 
     elif find_by == 'Surveyor':
         st.sidebar.subheader('Surveyor')
@@ -145,7 +191,13 @@ else:
         for user in userNames:
             chatNames = messageData.getChatNames(user)
             message_ids = messageData.getMessageIds(user, chatNames)
-            dataMapping[user] = [dataDir + 'downloaded-media/' + user.split('(')[0].strip() + '-' + message_id for message_id in message_ids]
+            tempList = []
+            for dataDir in downloadDirectories:
+                path1 = dataDir + 'downloaded-media/' + user.split('(')[0].strip() + '-'
+                for message_id in message_ids:
+                    if os.path.exists(path1 + message_id):
+                        tempList.append(path1 + message_id)
+            dataMapping[user] = tempList
 
 
 
@@ -257,68 +309,83 @@ else:
 
     Total_Size = round(Total_Size/1024, 2)
     st.markdown('**Total Size** : ' + str(Total_Size) + ' GB')
-
-    # Display a pie chart using Plotly Express
-    st.markdown("### Category Wise Usage")
-    category_df = pd.DataFrame({'Category': list(Category_Map.keys()), 'Size': list(Category_Map.values())})
-    category_df['Size'] = round(category_df['Size']/1024,2)
-    category_df = category_df.sort_values(by='Size', ascending=False)
-    pie_chart = px.pie(category_df, values='Size', names='Category', title='Category Wise Usage')
-    st.plotly_chart(pie_chart)
-    st.write(category_df)
-
-    # Display a histogram using Plotly Express for video durations
-    # Create bins of 10s, 30s, 1m, 2m and greater than 2m
-    st.markdown("### Video Durations")
-    bins = {
-        '10s': 0,
-        '30s': 0,
-        '1m': 0,
-        '2m': 0,
-        '>2m': 0,
-    }
-    sizeBins = {
-        '10s': 0,
-        '30s': 0,
-        '1m': 0,
-        '2m': 0,
-        '>2m': 0,
-    }
-    for durationData in Durations:
-        duration = durationData[0]
-        size = durationData[1]
-        if duration < 10:
-            bins['10s'] += 1
-            sizeBins['10s'] += size
-        elif duration < 30:
-            bins['30s'] += 1
-            sizeBins['30s'] += size
-        elif duration < 60:
-            bins['1m'] += 1
-            sizeBins['1m'] += size
-        elif duration < 120:
-            bins['2m'] += 1
-            sizeBins['2m'] += size
-        else:
-            bins['>2m'] += 1
-            sizeBins['>2m'] += size
-
-    st.markdown("**By Count**")
-    bins_df = pd.DataFrame({'Duration': list(bins.keys()), 'Count': list(bins.values())})
-    # percentage of videos in each bin
-    bins_df['Percentage'] = round(bins_df['Count'] / bins_df['Count'].sum() * 100, 2)
-    # bins_df = bins_df.sort_values(by='Duration', ascending=False)
-    fig = px.bar(bins_df, x='Duration', y='Count', text='Percentage',
-             labels={'Duration': 'Duration (seconds)', 'Percentage': 'Percentage', 'Count': 'Count'})
-    fig.update_traces(texttemplate='%{text}', textposition='outside')
-    st.plotly_chart(fig)
     
-    st.markdown("**By Size in GBs**")
-    sz_bins_df = pd.DataFrame({'Duration': list(sizeBins.keys()), 'Size': list(sizeBins.values())})
-    # percentage of videos in each bin
-    sz_bins_df['Size'] = round(sz_bins_df['Size'] / 1024, 2)
-    sz_bins_df['Percentage'] = round(sz_bins_df['Size'] / sz_bins_df['Size'].sum() * 100, 2)
-    fig1 = px.bar(sz_bins_df, x='Duration', y='Size', text='Percentage',
-             labels={'Duration': 'Duration (seconds)', 'Percentage': 'Percentage', 'Size': 'Size in GBs'})
-    fig1.update_traces(texttemplate='%{text}', textposition='outside')
-    st.plotly_chart(fig1)
+    
+    st.markdown("## Disk wise Usage")
+    disk_usage = getDiskUsage()
+    for drive in disk_usage:
+        st.markdown('### Drive : `' + drive + '`')
+        st.markdown('**Total** : ' + str(disk_usage[drive]['total']) + ' GB')
+        st.markdown('**Used** : ' + str(disk_usage[drive]['used']) + ' GB')
+        st.markdown('**Free** : ' + str(disk_usage[drive]['free']) + ' GB')
+        # Draw pie chart of free and used space
+        fig = px.pie(values=[disk_usage[drive]['used'], disk_usage[drive]['free']], names=['Used', 'Free'])
+        st.plotly_chart(fig)
+
+    # # Display a pie chart using Plotly Express
+    # st.markdown("### Category Wise Usage")
+    # category_df = pd.DataFrame({'Category': list(Category_Map.keys()), 'Size': list(Category_Map.values())})
+    # category_df['Size'] = round(category_df['Size']/1024,2)
+    # category_df = category_df.sort_values(by='Size', ascending=False)
+    # pie_chart = px.pie(category_df, values='Size', names='Category', title='Category Wise Usage')
+    # st.plotly_chart(pie_chart)
+    # st.write(category_df)
+
+    # # Display a histogram using Plotly Express for video durations
+    # # Create bins of 10s, 30s, 1m, 2m and greater than 2m
+    # st.markdown("### Video Durations")
+    # bins = {
+    #     '10s': 0,
+    #     '30s': 0,
+    #     '1m': 0,
+    #     '2m': 0,
+    #     '>2m': 0,
+    # }
+    # sizeBins = {
+    #     '10s': 0,
+    #     '30s': 0,
+    #     '1m': 0,
+    #     '2m': 0,
+    #     '>2m': 0,
+    # }
+    # for durationData in Durations:
+    #     duration = durationData[0]
+    #     size = durationData[1]
+    #     if duration < 10:
+    #         bins['10s'] += 1
+    #         sizeBins['10s'] += size
+    #     elif duration < 30:
+    #         bins['30s'] += 1
+    #         sizeBins['30s'] += size
+    #     elif duration < 60:
+    #         bins['1m'] += 1
+    #         sizeBins['1m'] += size
+    #     elif duration < 120:
+    #         bins['2m'] += 1
+    #         sizeBins['2m'] += size
+    #     else:
+    #         bins['>2m'] += 1
+    #         sizeBins['>2m'] += size
+
+    # st.markdown("**By Count**")
+    # bins_df = pd.DataFrame({'Duration': list(bins.keys()), 'Count': list(bins.values())})
+    # # percentage of videos in each bin
+    # bins_df['Percentage'] = round(bins_df['Count'] / bins_df['Count'].sum() * 100, 2)
+    # # bins_df = bins_df.sort_values(by='Duration', ascending=False)
+    # fig = px.bar(bins_df, x='Duration', y='Count', text='Percentage',
+    #          labels={'Duration': 'Duration (seconds)', 'Percentage': 'Percentage', 'Count': 'Count'})
+    # fig.update_traces(texttemplate='%{text}', textposition='outside')
+    # st.plotly_chart(fig)
+    
+    # st.markdown("**By Size in GBs**")
+    # sz_bins_df = pd.DataFrame({'Duration': list(sizeBins.keys()), 'Size': list(sizeBins.values())})
+    # # percentage of videos in each bin
+    # sz_bins_df['Size'] = round(sz_bins_df['Size'] / 1024, 2)
+    # sz_bins_df['Percentage'] = round(sz_bins_df['Size'] / sz_bins_df['Size'].sum() * 100, 2)
+    # fig1 = px.bar(sz_bins_df, x='Duration', y='Size', text='Percentage',
+    #          labels={'Duration': 'Duration (seconds)', 'Percentage': 'Percentage', 'Size': 'Size in GBs'})
+    # fig1.update_traces(texttemplate='%{text}', textposition='outside')
+    # st.plotly_chart(fig1)
+    
+    
+    

@@ -1,0 +1,9 @@
+# Survey Data
+survey: "path/to/backend/formResponse"
+
+# WhatsApp Data
+download_paths: [
+    'download/storage/path1',
+    'download/storage/path2',
+    'download/storage/path3'
+]

@@ -40,7 +40,7 @@ const pipeline = new mongoose.Schema({
     status: {
         type: String,
         required: true,
-        enum: ['running', 'completed']
+        enum: ['running', 'completed', 'failed'],
     },
     endTime: {
         type: Date,
@@ -50,6 +50,11 @@ const pipeline = new mongoose.Schema({
         type: [userRecords],
         required: false,
         default: []
+    },
+    totalRecords: {
+        type: Number,
+        required: false,
+        default: 0
     },   
 });
 

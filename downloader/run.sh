@@ -8,7 +8,7 @@ echo "Running Whatsapp Explorer Downloader at $current_date_time"
 
 export NVM_DIR=$HOME/.nvm
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm use 16.16.0
+nvm use 18.16.0
 
 cd $script_dir
 npm run main

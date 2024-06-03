@@ -121,7 +121,7 @@ const logAllChatNames = async (clientId, participantId, clientName) => {
 
     // Dont store chats with 0 data
     if (chatsToBeStored.length === 0) {
-        return chatsToBeReturned;
+        return chatsToBeStored;
     }
 
     if (chatUser) {

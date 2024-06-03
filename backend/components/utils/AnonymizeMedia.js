@@ -14,7 +14,7 @@ async function runPythonScript(extension, folder) {
         );
         child.stdout.on("data", function (data) {
             // console.log("stdout: " + data);
-            if (data.includes("Anonymisation done!") || data.includes("Anonymisation failed!"))
+            if (data.includes("Anonymisation done!") || data.includes("Anonymisation failed!") || data.includes("Corrupted image"))
                 resolve(data)
         });
         child.stderr.on("data", function (data) {
@@ -76,6 +76,10 @@ async function anonymizeMedia(data, extension) {
                     error.code = 4;
                     error.message = "NSFW anonymisation failed";
                 }
+            }
+            else if (response.includes("Corrupted image")) {
+                error.code = 5;
+                error.message = "Corrupted image";
             }
             else {
                 if (response.includes("Face")) {

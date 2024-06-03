@@ -2,7 +2,6 @@ const MessageTypes = require("whatsapp-web.js").MessageTypes;
 const Admins = require("../../models/admins");
 const { encryptContact } = require("../../middleware/hashing");
 const config = require('config');
-const bcrypt = require('bcrypt');
 
 const asyncCallWithTimeout = async (asyncPromise, timeLimit) => {
   let timeoutHandle;
@@ -83,8 +82,8 @@ const mergeChats = async (oldChats, newChats) => {
     if (newChatId in id_dict) {
       continue;
     } else {
-      id_dict[newChatId] = true;
       all_chats.push(newChat);
+      id_dict[newChatId] = all_chats.length - 1;
     }
   }
 
@@ -92,10 +91,13 @@ const mergeChats = async (oldChats, newChats) => {
     let oldChat = oldChats[i];
     let oldChatId = oldChat['id']['_serialized'];
     if (oldChatId in id_dict) {
+      let addedNumMessages = 'num_messages' in all_chats[id_dict[oldChatId]] ? all_chats[id_dict[oldChatId]]['num_messages'] : 0;
+      let newNumMessages = 'num_messages' in oldChat ? oldChat['num_messages'] : 0;
+      all_chats[id_dict[oldChatId]]['num_messages'] = Math.max(addedNumMessages, newNumMessages);
       continue;
     } else {
-      id_dict[oldChatId] = true;
       all_chats.push(oldChat);
+      id_dict[oldChatId] = all_chats.length - 1;
     }
   }
 

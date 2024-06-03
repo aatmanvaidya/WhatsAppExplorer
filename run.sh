@@ -47,6 +47,7 @@ else
     echo "Installing pm2"
     npm install pm2 -g
 fi
+pm2 save --force
 # Install mongodb
 # Check if mongodb is installed
 mongod --version

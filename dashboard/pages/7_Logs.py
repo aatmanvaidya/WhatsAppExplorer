@@ -3,6 +3,7 @@ import pandas as pd
 import re
 import plost
 import plotly.express as px
+import subprocess
 # import subprocess
 
 import data.loadParticipants as loadParticipants
@@ -10,6 +11,18 @@ import data.loadParticipants as loadParticipants
 st.set_page_config(layout='wide', initial_sidebar_state='expanded', page_title='WMDash', page_icon=':bar_chart:')
 
 participants_data = loadParticipants.ParticipantsData()
+
+# Get active chrome instances from pgrep command
+def get_active_chrome_instances():
+    instances = []
+    try:
+        proc = subprocess.Popen(["pgrep", "-c" ,"chrome"], stdout=subprocess.PIPE)
+        (out, err) = proc.communicate()
+        out = out.decode('utf-8')
+        instances = out.split('\n')[0]
+    except Exception as e:
+        print(e)
+    return instances
 
 # Function to read the last N lines of the log file
 def read_last_n_lines(log_file, n):
@@ -44,7 +57,9 @@ def read_and_search_log(log_file, search_term):
     return result[::-1]
 
 
-st.title("Log Viewer")
+active_instances = get_active_chrome_instances()
+st.markdown(f"**Active Chrome Instances**: {active_instances}")
+# st.title("Log Viewer")
 log_file = "../api/whatsappWebApi/client-logs.txt"  # Replace with the actual path to your log file
 default_num_lines = 1000
 
@@ -58,17 +73,16 @@ if search_term:
     log_contents = read_and_search_log(log_file, search_term)
     df = pd.DataFrame(log_contents)
     st.write(
-        df.style.set_table_styles([{'selector': 'table', 'props': [('width', '100%')]}]),
-        use_container_width=True
+        df.style.set_table_styles([{'selector': 'table', 'props': [('width', '100%')]}])
     )
 else:
     st.subheader("Log File Contents")
     log_contents = read_last_n_lines(log_file, num_lines)
     df = pd.DataFrame(log_contents)
     st.write(
-        df.style.set_table_styles([{'selector': 'table', 'props': [('width', '100%')]}]),
-        use_container_width=True
+        df.style.set_table_styles([{'selector': 'table', 'props': [('width', '100%')]}])
     )
+    
 
 st.markdown("### Client Status")
 statusData = participants_data.getClientStatus()

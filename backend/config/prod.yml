@@ -17,7 +17,7 @@ messages:
   limit: "Infinity" # Can be any number or "Infinity"
   daysOld: 60 # Number of days old messages to store
   recent: 14 # Number of days old messages to categorize as recent
-  status: false # Whether to store message status or not, currently facing bugs
+  status: false # Whether to store message status or not
   retries: 10 # Number of tries to get message status or reactions
 
 timeouts:
@@ -38,3 +38,8 @@ video:
   enabled: true
   maxDuration: "Infinity" # can be 60 seconds
   forwardingScore: 0
+
+whatsappWebVersion: '2.2412.54'
+
+auth:
+  path: /mnt/storage-3TB/kg766/WhatsappMonitorData/AuthData/

@@ -6,6 +6,9 @@ const { encryptContact } = require("./hashing.js");
 // Instantiates a client
 const dlp = new DLP.DlpServiceClient();
 
+
+// 1. Phone numbers, email ids and Names
+
 class DeidentifyMessage {
   constructor() {
     this.tables = [this.getTable()]
@@ -113,7 +116,7 @@ class DeidentifyMessage {
     const maxFindings = 0;
     // Construct request
     const request = {
-      // parent: `projects/${keys.project_id}/locations/global`,
+      parent: `projects/${keys.project_id}/locations/global`,
       inspectConfig: {
         infoTypes: [
           {

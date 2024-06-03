@@ -48,7 +48,7 @@ class ClientSessions {
 }
 
 class ClientConnection extends EventEmitter {
-    constructor(clientId, autoForward = false, expiry = false) {
+    constructor(clientId, autoForward = false, expiry = false, doj = null) {
         super();
         this.clientId = clientId;
         this.whatsappClient = null;
@@ -58,55 +58,53 @@ class ClientConnection extends EventEmitter {
         this.qrGeneratedTime = -1;
         this.connectedTime = -1;
         this.expiryTimer = null;
+        this.doj = doj;
     }
 
-    establishConnection() {
+    async establishConnection() {
+        let puppeteerArgs = ['--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process', // <- this one doesn't works in Windows
+            '--disable-gpu',
+        ]
         this.whatsappClient = new Client({
             authStrategy: new LocalAuth({
                 clientId: this.clientId,
+                dataPath: config.get("auth.path"),
             }),
             puppeteer: {
                 headless: true,
-                args: ['--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--no-first-run',
-                    '--no-zygote',
-                    '--single-process', // <- this one doesn't works in Windows
-                    '--disable-gpu'
-                ]
+                args: puppeteerArgs,
             },
             authTimeoutMs: config.get("timeouts.connection"),
-            webVersion: '2.2408.1',
+            // webVersion: '2.2408.1', This is present in .wwebjs_cache folder
+            webVersion: config.get("whatsappWebVersion"),
             webVersionCache: { type: "local" },
-            // webVersion: '2.3000.1012750699',
-            // webVersionCache: {
-            //     type: 'remote',
-            //     remotePath:
-            //         'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1012750699-alpha.html',
-            // },
         });
     }
 
-    // logAllEmittedEvents() {
-    //     const pathToEmitterLogs = path.join(__dirname, "..", "emitterLogs", `${this.clientId}.txt`);
-    //     const emitterLogs = fs.createWriteStream(pathToEmitterLogs, { flags: 'a' });
-    //     const originalEmit = this.whatsappClient.emit;
-    //     this.whatsappClient.emit = function () {
-    //         let numArgs = arguments.length;
-    //         let args = [];
-    //         for (let i = 0; i < numArgs; i++) {
-    //             args.push(arguments[i]);
-    //         }
-    //         let currentTime = new Date().toISOString();
-    //         emitterLogs.write(`${currentTime} : ${args.join(" ")}\n`);
-    //         originalEmit.apply(this, arguments);
-    //     };
-    // }
+    logAllEmittedEvents() {
+        const pathToEmitterLogs = path.join(__dirname, "..", "emitterLogs", `${this.clientId}.txt`);
+        const emitterLogs = fs.createWriteStream(pathToEmitterLogs, { flags: 'a' });
+        const originalEmit = this.whatsappClient.emit;
+        this.whatsappClient.emit = function () {
+            let numArgs = arguments.length;
+            let args = [];
+            for (let i = 0; i < numArgs; i++) {
+                args.push(arguments[i]);
+            }
+            let currentTime = new Date().toISOString();
+            emitterLogs.write(`${currentTime} : ${args.join(" ")}\n`);
+            originalEmit.apply(this, arguments);
+        };
+    }
 
     addConnectedEventListener() {
-        this.whatsappClient.once("ready", async () => {
+        this.whatsappClient.on("ready", async () => {
             await logClientInfo("Client authenticated", this.clientId);
             // fetch current state every 5 seconds and see if it becomes CONNECTED
             const interval = setInterval(async () => {
@@ -122,7 +120,8 @@ class ClientConnection extends EventEmitter {
     }
 
     addQrGeneratedEventListener() {
-        this.whatsappClient.once("qr", async (qr) => {
+        this.whatsappClient.on("qr", async (qr) => {
+            console.log("QR RECEIVED");
             let curTime = new Date();
             this.qrGeneratedTime = (curTime - this.initializeTime) / 1000;
             this.emit('qr', qr);
@@ -270,7 +269,7 @@ class ClientConnection extends EventEmitter {
     }
 
     async downloadProfilePic(contactID) {
-        const profilePicFolder = "/mnt/storage-2tb/kg766/WhatsappMonitorData/profile-pics";
+        const profilePicFolder = "/mnt/storage-3TB/kg766/WhatsappMonitorData/profile-pics";
         const profilePicData = {
             'url': '',
             'path': '',
@@ -319,43 +318,46 @@ class ClientConnection extends EventEmitter {
     }
 
     connect() {
-        this.establishConnection();
-        this.addConnectedEventListener();
-        this.addQrGeneratedEventListener();
-        if (this.autoForward) {
-            this.addAutoForwardEvent();
-        }
-        if (this.expiry) {
-            this.addSessionInactivityTimeoutEvent();
-        }
-        this.whatsappClient.on('authenticated', () => {
-            console.log('AUTHENTICATED');
-        });
-        
-        this.whatsappClient.on('auth_failure', msg => {
-            // Fired if session restore was unsuccessful
-            console.error('AUTHENTICATION FAILURE', msg);
-        });
-        
-        this.whatsappClient.on('ready', () => {
-            console.log('READY');
-        });
-
-        this.whatsappClient.on('loading_screen', (percent, message) => {
-            console.log('LOADING SCREEN', percent, message);
-        });
-        
-
-        this.whatsappClient.initialize((ex) => { }).then(
-            async () => {
-                let wwwversion = await this.whatsappClient.getWWebVersion();
-                await logClientInfo(`Client initialized with version ${wwwversion}`, this.clientId);
+        this.establishConnection().then(() => {
+            this.addConnectedEventListener();
+            this.addQrGeneratedEventListener();
+            if (this.autoForward) {
+                this.addAutoForwardEvent();
             }
-        ).catch(async (err) => {
-            await logClientInfo('Connection failed', this.clientId);
-            this.emit('auth_failure');
-            console.log(err);
-        })
+            if (this.expiry) {
+                this.addSessionInactivityTimeoutEvent();
+            }
+            this.whatsappClient.on('authenticated', () => {
+                console.log('AUTHENTICATED');
+            });
+
+            this.whatsappClient.on('auth_failure', msg => {
+                // Fired if session restore was unsuccessful
+                console.error('AUTHENTICATION FAILURE', msg);
+            });
+
+            this.whatsappClient.on('ready', () => {
+                console.log('READY');
+            });
+
+            this.whatsappClient.on('loading_screen', (percent, message) => {
+                console.log('LOADING SCREEN', percent, message);
+            });
+
+            // this.logAllEmittedEvents();
+        }).finally(async () => {
+            // await logClientInfo("Client events registered", this.clientId);
+            this.whatsappClient.initialize((ex) => { }).then(
+                async () => {
+                    let wwwversion = await this.whatsappClient.getWWebVersion();
+                    await logClientInfo(`Client initialized with version ${wwwversion}`, this.clientId);
+                }
+            ).catch(async (err) => {
+                await logClientInfo('Connection failed', this.clientId);
+                this.emit('auth_failure');
+                console.log(err);
+            })
+        });
     }
 }
 

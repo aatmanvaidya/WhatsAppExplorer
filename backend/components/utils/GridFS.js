@@ -63,6 +63,10 @@ async function storeFileInDB(media) {
     const filename = uuidv4();
     let data = media.data;
     let blurringCategory = "none";
+    let error = {
+        code: 0,
+        message: "",
+    };
     // console.log(media.filename);
     // check if the file is an image
     try {

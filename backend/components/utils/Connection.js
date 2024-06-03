@@ -1,16 +1,20 @@
 const { ClientConnection } = require("../WhatsappClient");
 const participants = require("../../models/participants");
+const pipeline = require("../../models/pipeline");
 const { clearSession } = require("../../helpers/clearUnusedClients");
 const { logClientInfo } = require("./Logger");
 const { logData } = require("./Data");
 
 
 async function connectToWhatsappClient(clientId, particpant_alwaysActive) {
-  const client = new ClientConnection(clientId, false, false);
+  let participant = await participants.findOne({ clientId: clientId });
+  let doj = participant.dateOfRegistration;
+  const client = new ClientConnection(clientId, false, false, doj);
   whatsappSessions.put(clientId, client);
   const userData = {
     userId: clientId,
   }
+  await logClientInfo("Auto logging started for client", clientId);
   return new Promise((resolve, reject) => {
     client.once("connected", async () => {
       userData['connectionTime'] = new Date();
@@ -18,7 +22,7 @@ async function connectToWhatsappClient(clientId, particpant_alwaysActive) {
       let result = await logData(clientId);
       userData['messagesDownloaded'] = result[0];
       userData['mediaDownloaded'] = result[1];
-      if (particpant_alwaysActive[clientId] == false) {
+      if (particpant_alwaysActive === false) {
         // disconnect client
         await client.clear();
         whatsappSessions.remove(clientId);
@@ -65,7 +69,8 @@ async function connectAutoForwardingClients() {
 
   // connect
   for (let i = 0; i < client_ids.length; i++) {
-    const client = new ClientConnection(client_ids[i], true, false);
+    let p = await participants.findOne({ clientId: client_ids[i] });
+    const client = new ClientConnection(client_ids[i], true, false, p.dateOfRegistration);
     whatsappSessions.put(client_ids[i], client);
     client.once("qr", async (qr) => {
       await logClientInfo("Autoforwarding User revoked access, skipping...", client_ids[i]);
@@ -89,6 +94,12 @@ const resetClientStatus = async () => {
     all_participants[i].isLogging = false;
     all_participants[i].clientStatus = "DISCONNECTED";
     await all_participants[i].save();
+  }
+
+  const all_running_pipelines = await pipeline.find({ status: "running" });
+  for (let i = 0; i < all_running_pipelines.length; i++) {
+    all_running_pipelines[i].status = "failed";
+    await all_running_pipelines[i].save();
   }
 };
 

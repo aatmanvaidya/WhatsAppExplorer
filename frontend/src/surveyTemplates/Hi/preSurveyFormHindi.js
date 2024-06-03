@@ -64,6 +64,18 @@ export default function preSurveyJsonHindi() {
                             "value": "Amethi",
                             "text": "अमेठी"
                         },
+                        {
+                            "value": "Siddharth Nagar",
+                            "text": "सिद्धार्थ नगर"
+                        },
+                        {
+                            "value": "Shamli",
+                            "text": "शामली"
+                        },
+                        {
+                            "value": "Baghpat",
+                            "text": "बागपत"
+                        }
                     ]
                 },
                 {
@@ -135,6 +147,209 @@ export default function preSurveyJsonHindi() {
                         }
                     ]
                 },
+                {
+                    "type": "dropdown",
+                    "name": "Town_Siddharth_Nagar",
+                    "visibleIf": "{District} = 'Siddharth Nagar'",
+                    "title": "आप किस शहर में रहते हैं?",
+                    "isRequired": true,
+                    "choices": [
+                        {
+                            "value": "Naugarh / Siddharthnagar",
+                            "text": " नौगढ़ / सिद्धार्थनगर"
+                        },
+                        {
+                            "value": "Uska Bazar",
+                            "text": " उसका बाजार"
+                        },
+                        {
+                            "value": "Bansi",
+                            "text": " बंसी"
+                        },
+                        {
+                            "value": "Domariyaganj",
+                            "text": " डोमरियागंज"
+                        },
+                        {
+                            "value": "Itwa",
+                            "text": " इटवा"
+                        },
+                        {
+                            "value": "Barhani",
+                            "text": " बरहानी"
+                        },
+                        {
+                            "value": "Shohratgarh",
+                            "text": " शोहरतगढ़"
+                        },
+                        {
+                            "value": "Biskohar",
+                            "text": " बिसकोहर"
+                        },
+                        {
+                            "value": "Bharat Bhari / Bhari",
+                            "text": " भारत भरी / भरी"
+                        },
+                        {
+                            "value": "Kapilvastu",
+                            "text": " कपिलवस्तु"
+                        },
+                        {
+                            "value": "Replacement 1",
+                            "text": "Replacement 1"
+                        },
+                        {
+                            "value": "Replacement 2",
+                            "text": "Replacement 2"
+                        },
+                        {
+                            "value": "Replacement 3",
+                            "text": "Replacement 3"
+                        },
+                        {
+                            "value": "Replacement 4",
+                            "text": "Replacement 4"
+                        },
+                        {
+                            "value": "Replacement 5",
+                            "text": "Replacement 5"
+                        }
+                    ]
+                },
+                {
+                    "type": "dropdown",
+                    "name": "Town_Shamli",
+                    "visibleIf": "{District} = 'Shamli'",
+                    "title": "आप किस शहर में रहते हैं?",
+                    "isRequired": true,
+                    "choices": [
+                        {
+                            "value": "Shamli - Charan Singh colony / kaknagar",
+                            "text": " शामली - चरण सिंह कॉलोनी / काकनगर"
+                        },
+                        {
+                            "value": "Shamli - Kamla colony / Dayanand Nagar",
+                            "text": " शामली - कमला कॉलोनी / दयानंद नगर"
+                        },
+                        {
+                            "value": "Garhi Pukhta",
+                            "text": " गढ़ी पुख्ता"
+                        },
+                        {
+                            "value": "Kairana - Durbar Mosque / Jama Masjib",
+                            "text": " कैराना - दरबार मस्जिद / जामा मस्जिब"
+                        },
+                        {
+                            "value": "Kairana - Arya nagar",
+                            "text": " कैराना - आर्य नगर"
+                        },
+                        {
+                            "value": "Khandla",
+                            "text": " खंडला"
+                        },
+                        {
+                            "value": "Unn",
+                            "text": " उन्न"
+                        },
+                        {
+                            "value": "JhinJhanna",
+                            "text": " झिनझना"
+                        },
+                        {
+                            "value": "Jalalabad",
+                            "text": " जलालाबाद"
+                        },
+                        {
+                            "value": "Thanabawan",
+                            "text": " थानाबावन"
+                        },
+                        {
+                            "value": "Replacement 1",
+                            "text": "Replacement 1"
+                        },
+                        {
+                            "value": "Replacement 2",
+                            "text": "Replacement 2"
+                        },
+                        {
+                            "value": "Replacement 3",
+                            "text": "Replacement 3"
+                        },
+                        {
+                            "value": "Replacement 4",
+                            "text": "Replacement 4"
+                        },
+                        {
+                            "value": "Replacement 5",
+                            "text": "Replacement 5"
+                        }
+                    ]
+                },
+                {
+                    "type": "dropdown",
+                    "name": "Town_Baghpat",
+                    "visibleIf": "{District} = 'Baghpat'",
+                    "title": "आप किस शहर में रहते हैं?",
+                    "isRequired": true,
+                    "choices": [
+                        {
+                            "value": "Baraut - Bhajan Vihar (North of City)",
+                            "text": " बरौत - भजन विहार (शहर के उत्तर)"
+                        },
+                        {
+                            "value": "Baraut - Desraj Mohalla (south of city)",
+                            "text": " बरौत - देशराज मोहल्ला (शहर के दक्षिण)"
+                        },
+                        {
+                            "value": "Chhaprauli",
+                            "text": " छपरौली"
+                        },
+                        {
+                            "value": "Doghat",
+                            "text": " डोघट"
+                        },
+                        {
+                            "value": "Tikri",
+                            "text": " टिकरी"
+                        },
+                        {
+                            "value": "Baghpat",
+                            "text": " बागपत"
+                        },
+                        {
+                            "value": "Agarwal",
+                            "text": " अग्रवाल"
+                        },
+                        {
+                            "value": "Aminagar",
+                            "text": " अमीनगर"
+                        },
+                        {
+                            "value": "Khekada Nagar Panchayat",
+                            "text": " खेकड़ा नगर पंचायत"
+                        },
+                        {
+                            "value": "Replacement 1",
+                            "text": "Replacement 1"
+                        },
+                        {
+                            "value": "Replacement 2",
+                            "text": "Replacement 2"
+                        },
+                        {
+                            "value": "Replacement 3",
+                            "text": "Replacement 3"
+                        },
+                        {
+                            "value": "Replacement 4",
+                            "text": "Replacement 4"
+                        },
+                        {
+                            "value": "Replacement 5",
+                            "text": "Replacement 5"
+                        }
+                    ]
+                },                
                 {
                     "type": "dropdown",
                     "name": "Town_Lucknow",

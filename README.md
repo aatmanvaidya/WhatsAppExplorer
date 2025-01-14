@@ -1,5 +1,5 @@
 # WhatsApp Explorer : A WhatsApp Data Collection Tool
-Code for WhatsApp Explorer https://whatsapp.whats-viral.me/
+This repository presents code for WhatsApp Explorer. An instance of WhatsApp Explorer can be found here: https://whatsapp.whats-viral.me/
 
 ## Introduction
 Whatsapp Explorer is an end-to-end data collection tool for WhatsApp. It is designed to collect data from WhatsApp groups and individual chats for research purposes. The tool manages the data collection process, including consent of chats for donation, anonymization of media and messages, and storage of the data. The tool also provides a monitoring dashboard to monitor the data collection process. The tool is designed to be scalable and can be used to collect data from multiple WhatsApp accounts simultaneously.

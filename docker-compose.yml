@@ -1,17 +1,35 @@
-version: '3'
+version: '3.8'
 
 services:
-  app:
-    build: .
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     volumes:
-      - .:/app
-      - /app/node_modules
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
     depends_on:
       - mongodb
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/whatsappLogs
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    restart: unless-stopped
 
   mongodb:
     image: mongo:latest
@@ -19,6 +37,7 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    restart: unless-stopped
 
 volumes:
-  mongodb_data: 
+  mongodb_data:
